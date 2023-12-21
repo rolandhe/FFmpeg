@@ -75,7 +75,7 @@ static int file_mem_write(URLContext *h, const unsigned char *buf, int size){
         if(buffer_size < size){
             buffer_size += size;
         }
-        c->pBuffer->buffer = malloc(buffer_size);
+        c->pBuffer->buffer = av_malloc(buffer_size);
         c->ctrlPoint = buffer_size;
     }
 
@@ -86,10 +86,10 @@ static int file_mem_write(URLContext *h, const unsigned char *buf, int size){
         if (new_buff_size < size) {
             new_buff_size += size;
         }
-        char * new_buff = malloc(new_buff_size  );
+        char * new_buff = av_malloc(new_buff_size  );
         memcpy(new_buff, c->pBuffer->buffer, c->pBuffer->size);
 
-        free(c->pBuffer->buffer);
+        av_free(c->pBuffer->buffer);
         c->pBuffer->buffer = new_buff;
         c->ctrlPoint = new_buff_size;
     }
