@@ -74,6 +74,7 @@ typedef struct FileContext {
     int blocksize;
     int follow;
     int seekable;
+    int auto_close;
 #if HAVE_DIRENT_H
     DIR *dir;
 #endif
@@ -243,6 +244,8 @@ static int file_open(URLContext *h, const char *filename, int flags)
     if (c->seekable >= 0)
         h->is_streamed = !c->seekable;
 
+    c->auto_close = 1;
+
     return 0;
 }
 
@@ -266,6 +269,9 @@ static int64_t file_seek(URLContext *h, int64_t pos, int whence)
 static int file_close(URLContext *h)
 {
     FileContext *c = h->priv_data;
+    if (!c->auto_close){
+        return 0;
+    }
     return close(c->fd);
 }
 
@@ -383,7 +389,18 @@ static int pipe_open(URLContext *h, const char *filename, int flags)
     char *final;
     av_strstart(filename, "pipe:", &filename);
 
-    fd = strtol(filename, &final, 10);
+    char * auto_close = av_stristr(filename,";auto_close");
+    if(!auto_close){
+        fd = strtol(filename, &final, 10);
+        c->auto_close = 0;
+    } else {
+        char tmp[255] = {0};
+        strncpy(tmp,filename,auto_close - filename);
+        fd = strtol(tmp, &final, 10);
+        c->auto_close = 1;
+    }
+
+
     if((filename == final) || *final ) {/* No digits found, or something like 10ab */
         if (flags & AVIO_FLAG_WRITE) {
             fd = 1;
@@ -404,6 +421,7 @@ const URLProtocol ff_pipe_protocol = {
     .url_open            = pipe_open,
     .url_read            = file_read,
     .url_write           = file_write,
+    .url_close           = file_close,
     .url_get_file_handle = file_get_handle,
     .url_check           = file_check,
     .priv_data_size      = sizeof(FileContext),
