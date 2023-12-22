@@ -389,15 +389,18 @@ static int pipe_open(URLContext *h, const char *filename, int flags)
     char *final;
     av_strstart(filename, "pipe:", &filename);
 
+    c->auto_close = 0;
     char * auto_close = av_stristr(filename,";auto_close");
     if(!auto_close){
         fd = strtol(filename, &final, 10);
-        c->auto_close = 0;
+
     } else {
         char tmp[255] = {0};
         strncpy(tmp,filename,auto_close - filename);
         fd = strtol(tmp, &final, 10);
-        c->auto_close = 1;
+        if(flags & AVIO_FLAG_WRITE){
+            c->auto_close = 1;
+        }
     }
 
 
